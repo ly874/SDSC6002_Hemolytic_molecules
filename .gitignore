@@ -36,3 +36,6 @@ Thumbs.db
 results/outputs*/
 *.pkl
 *.log
+results/*.png
+results/*.jpg
+results/*.jpeg
