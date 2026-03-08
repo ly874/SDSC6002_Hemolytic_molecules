@@ -4,7 +4,10 @@
 基于皂苷结构规则生成虚拟库（约4400万分子），筛选与训练集（624个分子）相似度 ≥0.30 的分子。
 
 ## 📊 数据集
-- `data/success_samples_train.csv`: 624个训练集分子
+- `ci0c00102_si_002.xlsx`原论文训练集
+- `ci0c00102_si_002.xlsx`原论文测试集
+- `data/success_samples_train.csv`: 624个训练集分子（原论文训练集-处理失败样本）
+- `data/success_samples_test.csv`: 70个测试集分子（处理后）
 - 已完成皂苷分类分析：453个真皂苷 (72.6%)，171个非皂苷 (27.4%)
 
 ## 🔬 最新发现
@@ -26,3 +29,4 @@
 2. 本地生成筛选后的候选分子（02_generate_candidates_local.py）
 3. Google Colab运行候选分子与训练集分子比较，找出相似者（stage2_gpu_similarity.py)
 4. 其他文件用于分析训练集内部皂苷与其他分子的相似度（check_sanopin_in _trainingset.py, trainging_set_similarity_analysis.py) - 本地运行
+5. HemodynamicDrug.ipynb为复现HD50回归实验的代码（Colab运行）
