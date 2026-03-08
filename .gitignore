@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+*.ipynb_checkpoints
+
+# Data
+*.zip
+*.tar
+*.gz
+
+# Temp files
+*.tmp
+*.log
+interim_*.csv
+checkpoint.pkl
+
+# Environment
+.env
+.venv
+venv/
+ENV/
+conda-env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+results/outputs*/
+*.pkl
+*.log
