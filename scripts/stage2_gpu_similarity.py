@@ -239,7 +239,7 @@ for batch_idx, batch_file in enumerate(tqdm(batch_files[start_batch:], desc="Pro
     # 新增：保存所有相似度结果
     if save_all_scores:
         # 为每个batch保存一个npy文件
-        scores_file = os.path.join(scores_output_dir, f'scores_batch_{batch_idx:04d}.npy')
+        scores_file = os.path.join(scores_output_dir, f'scores_batch_{actual_idx:04d}.npy')
         np.save(scores_file, avg_sims)
 
     # 筛选通过阈值的分子
@@ -261,7 +261,7 @@ for batch_idx, batch_file in enumerate(tqdm(batch_files[start_batch:], desc="Pro
     # 每处理10个batch保存一次中间结果
     if (batch_idx + 1) % 10 == 0:
         temp_df = pd.DataFrame(all_results)
-        temp_file = os.path.join(output_dir, f'interim_batch_{batch_idx + 1}.csv')
+        temp_file = os.path.join(output_dir, f'interim_batch_{actual_idx + 1}.csv')
         temp_df.to_csv(temp_file, index=False)
         # ===== 新增：保存checkpoint =====
         with open(checkpoint_path, 'wb') as f:
@@ -366,10 +366,6 @@ if save_all_scores:
         est_hits = (index_df['mean_score'] > thresh).sum() * cpu_batch_size * 0.01
         print(f"  Threshold {thresh:.2f}: ~{est_hits:.0f} estimated hits")
 
-# 保存完整结果
-output_file = os.path.join(output_dir, 'all_in_ad_molecules.csv')
-results_df.to_csv(output_file, index=False)
-print(f"\n✅ Full results saved to: {output_file}")
 
 # 保存按相似度分类的结果
 if len(results_df) > 0:
