@@ -155,6 +155,11 @@ batch_files = sorted([f for f in os.listdir(input_dir)
                       if f.startswith('batch_') and f.endswith('.txt')])
 print(f"Found {len(batch_files)} batch files")
 
+# ===== 新增：只保留前1637个batch =====
+# batch_files = batch_files[1637:4397]
+# print(f"Will process batches 1637 to 4396 ({len(batch_files)} files)")
+# =====================================
+
 # ============================================
 # 5. 加载训练集并预计算到GPU
 # ============================================
@@ -213,15 +218,20 @@ for batch_idx, batch_file in enumerate(tqdm(batch_files[start_batch:], desc="Pro
 
     # 生成指纹（CPU）
     batch_fps = []
+    all_smiles = []
     valid_smiles = []
     for smi in smiles_list:
+        all_smiles.append(smi)
         mol = Chem.MolFromSmiles(smi)
         if mol:
             fp = AllChem.GetMorganFingerprintAsBitVect(mol, 3, 2048)
             arr = np.zeros((1,))
             DataStructs.ConvertToNumpyArray(fp, arr)
             batch_fps.append(arr)
-            valid_smiles.append(smi)
+            valid_smiles.append(smi)  # 仍保留有效列表用于筛选
+        else:
+            # 无效分子用零向量
+            batch_fps.append(np.zeros(2048))
 
     if not batch_fps:
         continue
@@ -237,11 +247,16 @@ for batch_idx, batch_file in enumerate(tqdm(batch_files[start_batch:], desc="Pro
     avg_sims = tanimoto_gpu(batch_tensor, train_tensor)
 
     # 新增：保存所有相似度结果
+    # 保存所有相似度结果时，同时保存SMILES
     if save_all_scores:
-        # 为每个batch保存一个npy文件
         scores_file = os.path.join(scores_output_dir, f'scores_batch_{actual_idx:04d}.npy')
         np.save(scores_file, avg_sims)
 
+        # ✅ 新增：保存对应的SMILES
+        smiles_file = os.path.join(scores_output_dir, f'smiles_batch_{actual_idx:04d}.txt')
+        with open(smiles_file, 'w') as f:
+            for smi in all_smiles:
+                f.write(smi + '\n')
     # 筛选通过阈值的分子
     for smi, sim in zip(valid_smiles, avg_sims):
         if sim >= threshold:
