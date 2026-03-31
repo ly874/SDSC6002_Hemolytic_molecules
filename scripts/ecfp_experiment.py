@@ -57,10 +57,10 @@ for radius in radii:
         y_filtered = y[valid_indices]
         print(f"有效分子数: {len(X)}")
 
-        # 划分训练/验证集（可选，用于快速评估）
+        # 划分训练/验证集（快速评估）
         X_train, X_val, y_train, y_val = train_test_split(X, y_filtered, test_size=0.2, random_state=42)
 
-        # 模型：随机森林（你也可以换成其他模型）
+        # 模型：随机森林
         rf = RandomForestRegressor(n_estimators=100, random_state=42)
 
         # 交叉验证（用全部有效数据）
@@ -112,3 +112,68 @@ plt.show()
 # 保存结果到 CSV
 results_df.to_csv('ecfp_experiment_results.csv', index=False)
 print("结果已保存。")
+
+
+
+# 诊断代码
+import pandas as pd
+import numpy as np
+from rdkit import Chem
+from rdkit.Chem import AllChem
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
+import matplotlib.pyplot as plt
+
+# 1. 重新加载并严格对齐数据
+train_data = pd.read_csv('success_samples_train.csv')
+# 剔除可能存在的 LogHD50 为空的数据
+train_data = train_data.dropna(subset=['LogHD50', 'SMILES'])
+
+smiles_list = train_data['SMILES'].tolist()
+y = train_data['LogHD50'].values
+
+X = []
+y_filtered = []
+failed_count = 0
+
+print("正在生成指纹...")
+for i, smiles in enumerate(smiles_list):
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is not None:
+        # 用组长建议的配置：radius=2, nbits=2048
+        fp = AllChem.GetMorganFingerprintAsBitVect(mol, 2, nBits=2048)
+        X.append(np.array(fp))
+        y_filtered.append(y[i])
+    else:
+        failed_count += 1
+
+X = np.array(X)
+y_filtered = np.array(y_filtered)
+
+print("-" * 30)
+print(f"数据总数: {len(smiles_list)}")
+print(f"解析成功数: {len(X)}")
+print(f"解析失败数: {failed_count}")
+print(f"特征矩阵 X 形状: {X.shape}")
+print(f"标签向量 y 形状: {y_filtered.shape}")
+print(f"y 中是否包含 NaN: {np.isnan(y_filtered).any()}")
+print("-" * 30)
+
+# 2. 跑最简单的 RandomForest 看训练集 R2
+print("训练基础 RandomForest 模型...")
+rf = RandomForestRegressor(n_estimators=100, random_state=42)
+rf.fit(X, y_filtered)
+y_pred_train = rf.predict(X)
+train_r2 = r2_score(y_filtered, y_pred_train)
+
+print(f">>> 训练集 R² (Training R²): {train_r2:.4f} <<<")
+if train_r2 > 0.7:
+    print("结论：训练集 R² 正常，数据加载无误。验证集 R² 为负纯粹是因为维度过高导致的严重过拟合。")
+
+# 3. 看看分布
+plt.hist(y_filtered, bins=30, edgecolor='black', color='#9B88ED')
+plt.title('Distribution of LogHD50 in Training Set')
+plt.xlabel('LogHD50')
+plt.ylabel('Frequency')
+plt.savefig('LogHD50_distribution.png', dpi=300, bbox_inches='tight')
+plt.show()
